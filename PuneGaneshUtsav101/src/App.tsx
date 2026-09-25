@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { initialPlan, type PlanState, type JourneyStatus } from './festival/types';
 import { Screen1 } from './festival/Screen1';
 import { Screen2 } from './festival/Screen2';
@@ -48,6 +49,24 @@ type Route =
   | { name: 'story'; id: string; back: JourneyOrigin; fromList: boolean }
   | { name: 'swap-stop'; position: number }
   | { name: 'tips'; back: Route };
+
+// A stable identity per distinct screen, so AnimatePresence knows when a
+// genuinely new screen has replaced the old one (vs. the same screen
+// re-rendering with new data, which shouldn't retrigger the transition).
+function routeKey(r: Route): string {
+  switch (r.name) {
+    case 's5':
+      return `s5-${r.stop}`;
+    case 'swap-stop':
+      return `swap-${r.position}`;
+    case 'story':
+      return `story-${r.id}`;
+    case 'discover':
+      return `discover-${r.back ? 'pushed' : 'root'}`;
+    default:
+      return r.name;
+  }
+}
 
 export default function App() {
   const [plan, setPlanState] = useState<PlanState>(initialPlan);
@@ -373,7 +392,20 @@ export default function App() {
           style={{ height: 'max(env(safe-area-inset-top), 60px)' }}
           aria-hidden
         />
-        <div className="min-h-0 flex-1">{screen}</div>
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.div
+              key={routeKey(route)}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ type: 'spring', bounce: 0, duration: 0.28 }}
+              className="absolute inset-0 flex flex-col"
+            >
+              {screen}
+            </motion.div>
+          </AnimatePresence>
+        </div>
         {isRoot ? <TabBar active={activeTab} onSelect={onTab} /> : null}
       </div>
     </div>
