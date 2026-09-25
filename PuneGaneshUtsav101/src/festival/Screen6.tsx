@@ -48,14 +48,14 @@ export function Screen6({
   stops,
   stop,
   onBack,
-  onExit,
+  onEndJourney,
   onHelp,
   onArrived,
 }: {
   stops: RouteStop[];
   stop: number;
   onBack: () => void;
-  onExit: () => void;
+  onEndJourney: () => void;
   onHelp: () => void;
   onArrived: () => void;
 }) {
@@ -128,11 +128,12 @@ export function Screen6({
             </p>
           </div>
           <button
-            onClick={onExit}
-            aria-label="Go to Home — your journey stays active"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] text-ink-secondary active:bg-sunken"
+            onClick={onEndJourney}
+            aria-label="End journey and return home"
+            className="flex h-11 shrink-0 items-center gap-1.5 rounded-[10px] border border-border-strong px-2.5 text-[13px] font-medium text-ink-secondary active:bg-sunken"
           >
-            <House size={22} strokeWidth={1.75} />
+            <House size={20} strokeWidth={1.75} />
+            End
           </button>
           <button
             onClick={onHelp}
