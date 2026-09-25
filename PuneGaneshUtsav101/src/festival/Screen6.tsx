@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useMotionValue, useDragControls, animate, type PanInfo } from 'motion/react';
 import {
   ArrowLeft,
   Navigation,
@@ -19,6 +20,11 @@ import {
 import { MapDiagram } from './MapDiagram';
 import { StatusPill } from './ui';
 import type { RouteStop } from './route';
+
+const PEEK_HEIGHT = 190;
+// A little bounce, since a settle here always follows either a drag release
+// or a deliberate tap — momentum-driven, per the spring guidance for sheets.
+const SHEET_SPRING = { type: 'spring' as const, bounce: 0.2, duration: 0.4 };
 
 function NearbyRow({
   icon: Icon,
@@ -59,6 +65,46 @@ export function Screen6({
   const m = current.mandal;
   const isLast = stop >= total - 1;
   const eta = current.legFromPrevMin || 6;
+
+  // The sheet is always full-height (70% of the map area); collapsing just
+  // translates it down so only the peek height shows above the bottom edge.
+  // A real drag + spring, not a discrete CSS height swap.
+  const mapAreaRef = useRef<HTMLDivElement>(null);
+  const [sheetHeight, setSheetHeight] = useState(420);
+  useEffect(() => {
+    const el = mapAreaRef.current;
+    if (!el) return;
+    const update = () => setSheetHeight(Math.round(el.clientHeight * 0.7));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const collapsedY = Math.max(sheetHeight - PEEK_HEIGHT, 0);
+  const y = useMotionValue(collapsedY);
+  // Drag starts only from the grab handle, not the scrollable content below
+  // it — otherwise dragging to scroll the expanded sheet would drag the
+  // whole sheet instead.
+  const dragControls = useDragControls();
+  // Keep the sheet pinned to whichever state it's in when the container is
+  // remeasured (e.g. safe-area/orientation changes), rather than stranding it.
+  useEffect(() => {
+    y.set(expanded ? 0 : collapsedY);
+  }, [collapsedY, expanded, y]);
+
+  const snapTo = (next: boolean, velocity = 0) => {
+    setExpanded(next);
+    animate(y, next ? 0 : collapsedY, { ...SHEET_SPRING, velocity });
+  };
+
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    const current = y.get();
+    // Momentum decides intent when the flick is decisive; otherwise fall
+    // back to whichever state the release point is closer to.
+    if (info.velocity.y < -400) snapTo(true, info.velocity.y);
+    else if (info.velocity.y > 400) snapTo(false, info.velocity.y);
+    else snapTo(current < collapsedY / 2, info.velocity.y);
+  };
 
   return (
     <div className="relative flex h-full flex-col bg-canvas">
@@ -105,18 +151,26 @@ export function Screen6({
       </div>
 
       {/* Map */}
-      <div className="relative flex-1">
+      <div ref={mapAreaRef} className="relative min-h-0 flex-1 overflow-hidden">
         <MapDiagram nextName={shortName(m.name)} />
 
-        {/* Bottom sheet */}
-        <div
-          className={`absolute inset-x-0 bottom-0 flex flex-col rounded-t-[24px] border-t border-border bg-surface shadow-[0_1px_2px_rgba(28,26,23,0.06)] transition-all duration-300 ${
-            expanded ? 'h-[70%]' : 'h-[190px]'
-          }`}
+        {/* Bottom sheet — always sheetHeight tall; collapsing translates it
+            down so only the peek shows. Draggable with a real spring snap. */}
+        <motion.div
+          drag="y"
+          dragListener={false}
+          dragControls={dragControls}
+          dragConstraints={{ top: 0, bottom: collapsedY }}
+          dragElastic={0.08}
+          dragMomentum={false}
+          onDragEnd={onDragEnd}
+          style={{ y, height: sheetHeight }}
+          className="absolute inset-x-0 bottom-0 flex flex-col rounded-t-[24px] border-t border-border bg-surface shadow-[0_-2px_16px_rgba(28,26,23,0.1)]"
         >
           <button
-            onClick={() => setExpanded((v) => !v)}
-            className="flex h-6 w-full shrink-0 items-center justify-center"
+            onPointerDown={(e) => dragControls.start(e)}
+            onClick={() => snapTo(!expanded)}
+            className="flex h-6 w-full shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
             aria-label={expanded ? 'Collapse details' : 'Expand details'}
           >
             <span className="h-1 w-8 rounded-full bg-border-strong" />
@@ -268,7 +322,7 @@ export function Screen6({
                           1.2 km, approx. 16 min walk from here
                         </p>
                         <button
-                          onClick={() => setExpanded(false)}
+                          onClick={() => snapTo(false)}
                           className="mt-3 flex h-14 items-center justify-center rounded-[10px] border border-border-strong px-4 text-[15px] font-medium text-ink active:bg-sunken"
                         >
                           Show on map
@@ -288,7 +342,7 @@ export function Screen6({
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
