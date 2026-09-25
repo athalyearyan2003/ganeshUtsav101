@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { initialPlan, type PlanState, type JourneyStatus } from './festival/types';
 import { Screen1 } from './festival/Screen1';
 import { Screen2 } from './festival/Screen2';
@@ -15,11 +15,9 @@ import { ScreenSafety } from './festival/ScreenSafety';
 import { ScreenFindFamily } from './festival/ScreenFindFamily';
 import { ScreenDiscover } from './festival/ScreenDiscover';
 import { ScreenStory } from './festival/ScreenStory';
-import { storyById, storyForStop } from './festival/discovery';
-import { mandals } from './festival/mandals';
+import { storyById, storyForMandal } from './festival/discovery';
+import { generateRoute } from './festival/route';
 import { GetHelpButton, TabBar, type TabId } from './festival/ui';
-
-const stopEtas = [7, 6, 9, 4];
 
 // Where a discovery screen returns to on "Continue to your journey".
 // 'home' / 'discover-root' are root tabs; 's4' / 's5' are pushed origins.
@@ -57,6 +55,17 @@ export default function App() {
 
   const setPlan = (p: Partial<PlanState>) =>
     setPlanState((prev) => ({ ...prev, ...p }));
+
+  // The generated route is derived from the plan — this is what actually
+  // makes group type, needs, time and interests change which mandals appear,
+  // in what order, and why (see festival/route.ts).
+  const journey = useMemo(() => generateRoute(plan), [plan]);
+  const stops = journey.stops;
+  const stopsLabel = `${stops.length} mandal${stops.length === 1 ? '' : 's'}`;
+  const durationHrs = Math.floor(journey.totalMin / 60);
+  const durationMins = journey.totalMin % 60;
+  const durationLabel =
+    durationHrs > 0 ? `${durationHrs} hr ${durationMins} min` : `${durationMins} min`;
 
   const originToRoute = (o: JourneyOrigin): Route => {
     if (o.name === 's5') return { name: 's5', stop: o.stop };
@@ -99,9 +108,11 @@ export default function App() {
         <ScreenHome
           status={status}
           stop={currentStop}
-          total={mandals.length}
-          nextName={mandals[Math.min(currentStop, mandals.length - 1)].name}
-          eta={stopEtas[currentStop] ?? 6}
+          total={stops.length}
+          stopsLabel={stopsLabel}
+          durationLabel={durationLabel}
+          nextName={stops[Math.min(currentStop, stops.length - 1)]?.mandal.name ?? ''}
+          eta={stops[Math.min(currentStop, stops.length - 1)]?.legFromPrevMin ?? 6}
           onHelp={() => openHelp({ name: 'home' })}
           onPlan={() => {
             setPlanState(initialPlan);
@@ -112,7 +123,8 @@ export default function App() {
           onContinueLive={() => setRoute({ name: 's6' })}
           onDiscover={() => setRoute({ name: 'discover' })}
           onNextStory={() => {
-            const story = storyForStop(currentStop);
+            const currentMandal = stops[currentStop]?.mandal;
+            const story = currentMandal ? storyForMandal(currentMandal.id) : undefined;
             if (story)
               setRoute({
                 name: 'story',
@@ -186,6 +198,8 @@ export default function App() {
       screen = (
         <Screen4
           plan={plan}
+          stops={stops}
+          constrained={journey.constrained}
           headerRight={<GetHelpButton onClick={() => openHelp({ name: 's4' })} />}
           onOpenStop={(i) => setRoute({ name: 's5', stop: i })}
           onStart={() => {
@@ -201,10 +215,13 @@ export default function App() {
         />
       );
       break;
-    case 's5':
-      screen = (
+    case 's5': {
+      const stopEntry = stops[route.stop] ?? stops[0];
+      screen = stopEntry ? (
         <Screen5
-          stopIndex={route.stop}
+          mandal={stopEntry.mandal}
+          stopNumber={route.stop + 1}
+          total={stops.length}
           onBack={() => setRoute({ name: 's4' })}
           onStart={() => {
             setStatus('active');
@@ -220,16 +237,18 @@ export default function App() {
             })
           }
         />
-      );
+      ) : null;
       break;
+    }
     case 's6':
       screen = (
         <Screen6
+          stops={stops}
           stop={currentStop}
           onBack={() => setRoute({ name: 's4' })}
           onHelp={() => openHelp({ name: 's6' })}
           onArrived={() => {
-            if (currentStop < mandals.length - 1) {
+            if (currentStop < stops.length - 1) {
               setCurrentStop((s) => s + 1);
             } else {
               setStatus('completed');
@@ -272,6 +291,7 @@ export default function App() {
           onBack={back ? () => setRoute(originToRoute(back)) : undefined}
           onHelp={back ? undefined : () => openHelp({ name: 'discover' })}
           curated={!back && status === 'none'}
+          stops={stops.map((s) => ({ id: s.mandal.id, name: s.mandal.name, deva: s.mandal.deva }))}
           onOpenStory={(id) =>
             setRoute({
               name: 'story',

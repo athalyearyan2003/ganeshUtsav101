@@ -23,8 +23,8 @@ import {
   InlineNote,
   TertiaryLink,
 } from './ui';
-import { mandals } from './mandals';
-import { storyForStop } from './discovery';
+import type { Mandal } from './mandals';
+import { storyForMandal } from './discovery';
 
 function RouteCard({
   selected,
@@ -108,18 +108,22 @@ const passList: { icon: LucideIcon; text: string; muted?: boolean }[] = [
 ];
 
 export function Screen5({
-  stopIndex,
+  mandal,
+  stopNumber,
+  total,
   onBack,
   onStart,
   onDiscoverStop,
 }: {
-  stopIndex: number;
+  mandal: Mandal;
+  stopNumber: number;
+  total: number;
   onBack: () => void;
   onStart: () => void;
   onDiscoverStop: (id: string) => void;
 }) {
-  const m = mandals[stopIndex] ?? mandals[0];
-  const story = storyForStop(stopIndex);
+  const m = mandal;
+  const story = storyForMandal(m.id);
   const [route, setRoute] = useState<'easier' | 'direct'>('easier');
   const [justChanged, setJustChanged] = useState(false);
 
@@ -134,7 +138,7 @@ export function Screen5({
 
   return (
     <div className="flex h-full flex-col">
-      <PlainHeader title={`Stop ${stopIndex + 1} of ${mandals.length}`} onBack={onBack} />
+      <PlainHeader title={`Stop ${stopNumber} of ${total}`} onBack={onBack} />
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-5">
         {/* Title block */}

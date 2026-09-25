@@ -71,6 +71,8 @@ export function ScreenHome({
   status,
   stop,
   total,
+  stopsLabel,
+  durationLabel,
   nextName,
   eta,
   onHelp,
@@ -83,6 +85,8 @@ export function ScreenHome({
   status: JourneyStatus;
   stop: number;
   total: number;
+  stopsLabel: string;
+  durationLabel: string;
   nextName: string;
   eta: number;
   onHelp: () => void;
@@ -137,7 +141,7 @@ export function ScreenHome({
                   Your route is ready
                 </h1>
                 <p className="mt-2 text-[15px] leading-[22px] text-ink-secondary tnum">
-                  4 stops · approx. 2 hr 10 min
+                  {stopsLabel} · approx. {durationLabel}
                 </p>
                 <div className="mt-5">
                   <PrimaryButton onClick={onOpenRoute}>
@@ -235,7 +239,7 @@ export function ScreenHome({
                   You completed your journey
                 </h1>
                 <p className="mt-2 text-[15px] leading-[22px] text-ink-secondary tnum">
-                  4 stops · approx. 2 hr 10 min
+                  {stopsLabel} · approx. {durationLabel}
                 </p>
                 <div className="mt-4">
                   <TertiaryLink icon={BookOpen} onClick={onDiscover}>

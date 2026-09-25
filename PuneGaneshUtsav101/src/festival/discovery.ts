@@ -18,7 +18,7 @@ export interface WhoItem {
 export interface Story {
   id: string;
   kind: 'ganpati' | 'dekhawa';
-  stopIndex: number; // journey stop this belongs to
+  mandalId: string; // the mandal this belongs to
   name: string;
   deva?: string;
   meta: string; // area / mandal line
@@ -37,11 +37,11 @@ export interface Story {
 const img = (id: string, w = 800, h = 450) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&auto=format`;
 
-export const ganpatiStories: Record<number, Story> = {
-  0: {
+export const ganpatiStories: Record<string, Story> = {
+  dagdusheth: {
     id: 'dagdusheth',
     kind: 'ganpati',
-    stopIndex: 0,
+    mandalId: 'dagdusheth',
     name: 'Dagdusheth Halwai Ganpati',
     deva: 'श्रीमंत दगडूशेठ हलवाई गणपती',
     meta: 'Budhwar Peth',
@@ -71,10 +71,10 @@ export const ganpatiStories: Record<number, Story> = {
     explore:
       'Accounts of the mandal describe how a modest household shrine slowly became a civic institution. As Pune’s public Ganeshotsav grew through the early twentieth century, Dagdusheth’s trust took on charitable work — schooling, food, and relief — alongside the festival itself. Today the temple stands year-round rather than only during the ten days, and its craftsmen are known for the idol’s changing ornamentation. What began as one family’s remembrance is now, in the retelling, a story the whole neighbourhood shares.',
   },
-  1: {
+  tulshibaug: {
     id: 'tulshibaug',
     kind: 'ganpati',
-    stopIndex: 1,
+    mandalId: 'tulshibaug',
     name: 'Tulshibaug Ganpati',
     deva: 'तुळशीबाग गणपती',
     meta: 'Tulshibaug',
@@ -99,10 +99,10 @@ export const ganpatiStories: Record<number, Story> = {
     explore:
       'Locals often describe Tulshibaug as a mandal of shopkeepers. The surrounding market — known for everyday household goods, thread, and small brass items — grew alongside the festival, and the two are hard to separate. The narrow approach that can feel crowded is, in the retelling, part of the character: darshan here is threaded through daily commerce rather than set apart from it. Visitors who come earlier in the day usually find the lanes easier to move through.',
   },
-  3: {
+  kasba: {
     id: 'kasba',
     kind: 'ganpati',
-    stopIndex: 3,
+    mandalId: 'kasba',
     name: 'Kasba Ganpati',
     deva: 'कसबा गणपती',
     meta: 'Kasba Peth',
@@ -131,7 +131,7 @@ export const ganpatiStories: Record<number, Story> = {
 export const dekhawaStory: Story = {
   id: 'samudra-manthan',
   kind: 'dekhawa',
-  stopIndex: 0,
+  mandalId: 'dagdusheth',
   name: 'Samudra Manthan',
   meta: 'A moving tableau near Dagdusheth · Budhwar Peth',
   image: img('1784815027580-a325ca72374f'),
@@ -169,31 +169,25 @@ export const dekhawaStory: Story = {
   ],
 };
 
-/** Ordered list for the Discover screen: one entry per journey stop, plus dekhawa. */
-export function discoverList(stopCount: number): (
+/** Ordered list for the Discover screen: one entry per journey stop, plus a
+    Dekhawa card when the journey passes its host mandal. */
+export function discoverList(
+  stops: { id: string; name: string; deva: string }[],
+): (
   | { type: 'story'; story: Story }
   | { type: 'unavailable'; stopIndex: number; name: string; deva: string }
 )[] {
   const items: ReturnType<typeof discoverList> = [];
-  const names = [
-    { name: 'Dagdusheth Halwai Ganpati', deva: 'श्रीमंत दगडूशेठ हलवाई गणपती' },
-    { name: 'Tulshibaug Ganpati', deva: 'तुळशीबाग गणपती' },
-    { name: 'Guruji Talim', deva: 'गुरुजी तालीम' },
-    { name: 'Kasba Ganpati', deva: 'कसबा गणपती' },
-  ];
-  for (let i = 0; i < stopCount; i++) {
-    const story = ganpatiStories[i];
+  let dekhawaShown = false;
+  stops.forEach((stop, i) => {
+    const story = ganpatiStories[stop.id];
     if (story) items.push({ type: 'story', story });
-    else
-      items.push({
-        type: 'unavailable',
-        stopIndex: i,
-        name: names[i]?.name ?? `Stop ${i + 1}`,
-        deva: names[i]?.deva ?? '',
-      });
-  }
-  // Dekhawa card sits after its host stop
-  items.push({ type: 'story', story: dekhawaStory });
+    else items.push({ type: 'unavailable', stopIndex: i, name: stop.name, deva: stop.deva });
+    if (stop.id === dekhawaStory.mandalId && !dekhawaShown) {
+      items.push({ type: 'story', story: dekhawaStory });
+      dekhawaShown = true;
+    }
+  });
   return items;
 }
 
@@ -206,8 +200,8 @@ export function curatedList(): { type: 'story'; story: Story }[] {
   return items;
 }
 
-export function storyForStop(index: number): Story | undefined {
-  return ganpatiStories[index];
+export function storyForMandal(mandalId: string): Story | undefined {
+  return ganpatiStories[mandalId];
 }
 
 export function storyById(id: string): Story | undefined {

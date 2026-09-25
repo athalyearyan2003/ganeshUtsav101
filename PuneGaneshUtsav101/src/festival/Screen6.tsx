@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { MapDiagram } from './MapDiagram';
 import { StatusPill } from './ui';
-import { mandals } from './mandals';
+import type { RouteStop } from './route';
 
 function NearbyRow({
   icon: Icon,
@@ -36,25 +36,26 @@ function NearbyRow({
 
 // Short label for the top strip and map pin (names are long)
 const shortName = (name: string) => name.replace(/ Ganpati$/, '').split(' ')[0];
-// Illustrative walking time to each stop
-const etas = [7, 6, 9, 4];
 
 export function Screen6({
+  stops,
   stop,
   onBack,
   onHelp,
   onArrived,
 }: {
+  stops: RouteStop[];
   stop: number;
   onBack: () => void;
   onHelp: () => void;
   onArrived: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const total = mandals.length;
-  const m = mandals[Math.min(stop, total - 1)];
+  const total = stops.length;
+  const current = stops[Math.min(stop, total - 1)];
+  const m = current.mandal;
   const isLast = stop >= total - 1;
-  const eta = etas[stop] ?? 6;
+  const eta = current.legFromPrevMin || 6;
 
   return (
     <div className="relative flex h-full flex-col bg-canvas">

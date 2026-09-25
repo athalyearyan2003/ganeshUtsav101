@@ -1,7 +1,6 @@
 import { BookOpen, Volume2, ChevronRight } from 'lucide-react';
 import { PlainHeader, RootHeader } from './ui';
 import { discoverList, curatedList, type Story } from './discovery';
-import { mandals } from './mandals';
 
 function StoryCard({ story, onOpen }: { story: Story; onOpen: () => void }) {
   return (
@@ -82,14 +81,16 @@ export function ScreenDiscover({
   onOpenStory,
   onHelp,
   curated = false,
+  stops,
 }: {
   onBack?: () => void;
   onOpenStory: (id: string) => void;
   onHelp?: () => void;
   /** true when no journey exists yet — show a small curated set, not the route list */
   curated?: boolean;
+  stops: { id: string; name: string; deva: string }[];
 }) {
-  const items = curated ? curatedList() : discoverList(mandals.length);
+  const items = curated ? curatedList() : discoverList(stops);
   const root = !onBack;
   return (
     <div className="flex h-full flex-col">

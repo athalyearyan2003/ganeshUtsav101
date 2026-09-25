@@ -8,6 +8,9 @@ import {
   ChevronDown,
   ChevronUp,
   Accessibility,
+  Stethoscope,
+  Toilet,
+  Baby,
   ParkingCircle,
   Info,
   BookOpen,
@@ -24,8 +27,9 @@ import {
   Footnote,
   TertiaryLink,
 } from './ui';
-import { storyForStop } from './discovery';
-import { mandals, type Facility, type Mandal } from './mandals';
+import { storyForMandal } from './discovery';
+import type { Facility, Mandal } from './mandals';
+import { formatDistance, type RouteStop } from './route';
 
 function FacilityList({ items }: { items: Facility[] }) {
   return (
@@ -49,18 +53,18 @@ function FacilityList({ items }: { items: Facility[] }) {
 }
 
 function StopCard({
-  index,
   mandal,
+  reason,
   onOpen,
   onDiscoverStop,
 }: {
-  index: number;
   mandal: Mandal;
+  reason?: string;
   onOpen: () => void;
   onDiscoverStop: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const story = storyForStop(index);
+  const story = storyForMandal(mandal.id);
   return (
     <div className="rounded-[14px] border border-border bg-surface p-4">
       <button onClick={onOpen} className="flex w-full items-start gap-2 text-left">
@@ -90,6 +94,9 @@ function StopCard({
       <p className="mt-3 text-[13px] leading-[18px] text-ink-tertiary tnum">
         {mandal.note}
       </p>
+      {reason ? (
+        <p className="mt-0.5 text-[13px] leading-[18px] text-ink-tertiary">{reason}</p>
+      ) : null}
 
       {mandal.easier ? (
         <div className="mt-3">
@@ -137,11 +144,13 @@ function Node({ n }: { n: number }) {
   );
 }
 
-function Leg({ text }: { text: string }) {
+function Leg({ meters, minutes }: { meters: number; minutes: number }) {
   return (
     <div className="flex items-center gap-2 py-3 text-[15px] leading-[22px] text-ink-secondary">
       <Footprints size={20} strokeWidth={1.75} className="shrink-0 text-ink-tertiary" />
-      <span className="tnum">{text}</span>
+      <span className="tnum">
+        {formatDistance(meters)} · approx. {minutes} min walk
+      </span>
     </div>
   );
 }
@@ -169,6 +178,8 @@ function RestNode({ withRest }: { withRest: boolean }) {
 
 export function Screen4({
   plan,
+  stops,
+  constrained,
   onBack,
   onOpenStop,
   onStart,
@@ -178,6 +189,8 @@ export function Screen4({
   headerRight,
 }: {
   plan: PlanState;
+  stops: RouteStop[];
+  constrained: boolean;
   onBack?: () => void;
   onOpenStop: (i: number) => void;
   onStart: () => void;
@@ -204,8 +217,33 @@ export function Screen4({
     chips.push({ icon: UsersRound, label: 'Avoid crowds' });
   if (plan.needs.includes('accessibility'))
     chips.push({ icon: Accessibility, label: 'Step-free' });
+  if (plan.needs.includes('toilet')) chips.push({ icon: Toilet, label: 'Toilet access' });
+  if (plan.needs.includes('medical'))
+    chips.push({ icon: Stethoscope, label: 'Medical support' });
+  if (plan.needs.includes('feeding'))
+    chips.push({ icon: Baby, label: 'Feeding/changing' });
 
-  const restCount = withRest ? 3 : 0;
+  const totalWalkM = stops.reduce((sum, s) => sum + s.legFromPrevM, 0);
+  const totalMin = stops.reduce((sum, s) => sum + s.legFromPrevMin + s.mandal.timeMin, 0);
+  const hours = Math.floor(totalMin / 60);
+  const mins = totalMin % 60;
+  const durationLabel = hours > 0 ? `${hours} hr ${mins} min` : `${mins} min`;
+
+  // Insert a rest node after any leg once ~20 min has accumulated since the
+  // last one, rather than at a fixed stop — matches "every 20 minutes" honestly
+  // regardless of how many stops the plan ends up with.
+  const restAfterStop = new Set<number>();
+  if (withRest) {
+    let minutesSinceRest = 0;
+    for (let i = 1; i < stops.length; i++) {
+      minutesSinceRest += stops[i].legFromPrevMin + stops[i - 1].mandal.timeMin;
+      if (minutesSinceRest >= 20) {
+        restAfterStop.add(i - 1);
+        minutesSinceRest = 0;
+      }
+    }
+  }
+  const restCount = restAfterStop.size;
 
   return (
     <div className="flex h-full flex-col">
@@ -215,11 +253,12 @@ export function Screen4({
         {/* Summary block */}
         <div className="bg-sunken px-5 py-5">
           <h2 className="text-[20px] font-semibold leading-[26px] text-ink tnum">
-            {mandals.length} mandals · Approx. 2 hr 10 min
+            {stops.length} mandals · Approx. {durationLabel}
           </h2>
           <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[15px] leading-[22px] text-ink-secondary tnum">
             <span className="inline-flex items-center gap-1.5">
-              <Footprints size={20} strokeWidth={1.75} /> 2.4 km total walking
+              <Footprints size={20} strokeWidth={1.75} /> {formatDistance(totalWalkM)} total
+              walking
             </span>
             {withRest ? (
               <span className="inline-flex items-center gap-1.5">
@@ -244,6 +283,15 @@ export function Screen4({
             })}
           </div>
 
+          {constrained ? (
+            <div className="mt-3">
+              <InlineNote icon={Info} tone="moderate">
+                We couldn&apos;t find enough step-free stops to fill the full
+                time available — this route is shorter than usual.
+              </InlineNote>
+            </div>
+          ) : null}
+
           {/* Discovery entry — scoped to this journey */}
           <div className="mt-3">
             <TertiaryLink icon={BookOpen} onClick={onDiscoverAll}>
@@ -254,38 +302,41 @@ export function Screen4({
 
         {/* Route */}
         <div className="px-5 py-5">
-          {mandals.map((m, i) => (
-            <div key={i}>
-              <div className="flex gap-3">
-                {/* spine */}
-                <div className="relative flex w-7 shrink-0 flex-col items-center">
-                  <div className="absolute top-0 bottom-0 left-1/2 w-1 -translate-x-1/2 bg-[var(--color-route)]" />
-                  <Node n={i + 1} />
-                </div>
-                <div className="min-w-0 flex-1 pb-3">
-                  <StopCard
-                    index={i}
-                    mandal={m}
-                    onOpen={() => onOpenStop(i)}
-                    onDiscoverStop={onDiscoverStop}
-                  />
-                </div>
-              </div>
-
-              {/* connector */}
-              {m.legTo ? (
+          {stops.map((s, i) => {
+            const showRest = restAfterStop.has(i);
+            return (
+              <div key={s.mandal.id}>
                 <div className="flex gap-3">
-                  <div className="flex w-7 shrink-0 justify-center">
-                    <div className="w-1 bg-[var(--color-route)]" />
+                  {/* spine */}
+                  <div className="relative flex w-7 shrink-0 flex-col items-center">
+                    <div className="absolute top-0 bottom-0 left-1/2 w-1 -translate-x-1/2 bg-[var(--color-route)]" />
+                    <Node n={i + 1} />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <Leg text={m.legTo} />
-                    {withRest && i === 1 ? <RestNode withRest /> : null}
+                  <div className="min-w-0 flex-1 pb-3">
+                    <StopCard
+                      mandal={s.mandal}
+                      reason={s.reason}
+                      onOpen={() => onOpenStop(i)}
+                      onDiscoverStop={onDiscoverStop}
+                    />
                   </div>
                 </div>
-              ) : null}
-            </div>
-          ))}
+
+                {/* connector */}
+                {i < stops.length - 1 ? (
+                  <div className="flex gap-3">
+                    <div className="flex w-7 shrink-0 justify-center">
+                      <div className="w-1 bg-[var(--color-route)]" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Leg meters={stops[i + 1].legFromPrevM} minutes={stops[i + 1].legFromPrevMin} />
+                      {showRest ? <RestNode withRest /> : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
 
           {/* Final parking node */}
           {withParking ? (
