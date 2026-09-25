@@ -12,6 +12,7 @@ import {
   Baby,
   Check,
   BookOpen,
+  Repeat,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -114,6 +115,7 @@ export function Screen5({
   onBack,
   onStart,
   onDiscoverStop,
+  onSwap,
 }: {
   mandal: Mandal;
   stopNumber: number;
@@ -121,6 +123,7 @@ export function Screen5({
   onBack: () => void;
   onStart: () => void;
   onDiscoverStop: (id: string) => void;
+  onSwap?: () => void;
 }) {
   const m = mandal;
   const story = storyForMandal(m.id);
@@ -163,6 +166,13 @@ export function Screen5({
             <div className="mt-3 border-t border-border pt-1">
               <TertiaryLink icon={BookOpen} onClick={() => onDiscoverStop(story.id)}>
                 Discover its story
+              </TertiaryLink>
+            </div>
+          ) : null}
+          {onSwap ? (
+            <div className={story ? '' : 'mt-3 border-t border-border pt-1'}>
+              <TertiaryLink icon={Repeat} onClick={onSwap}>
+                Choose a different stop
               </TertiaryLink>
             </div>
           ) : null}
