@@ -254,7 +254,7 @@ export default function App() {
       screen = target ? (
         <ScreenSwapStop
           currentName={target.mandal.name}
-          candidates={swapCandidates(stops, plan)}
+          candidates={swapCandidates(stops, position, plan)}
           onBack={() => setRoute({ name: 's5', stop: position })}
           onPick={(mandal) => {
             setManualStops(applySwapAt(stops, position, mandal, plan));

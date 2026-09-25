@@ -114,18 +114,46 @@ function legBetweenOrders(orderA: number, orderB: number): { m: number; min: num
   return { m, min };
 }
 
+export interface SwapCandidate {
+  mandal: Mandal;
+  reason?: string;
+  /** Change in total route walking distance/time if this candidate is
+      picked — positive means more walking, negative means less. Lets the
+      visitor see the real cost of a swap before committing to it, the same
+      way Screen2's accessibility note warns before the plan is built. */
+  deltaWalkM: number;
+  deltaWalkMin: number;
+}
+
 /** Other mandals the visitor could swap this stop for — excludes mandals
     already in the route, keeps the accessibility hard-filter, and ranks by
     interest match so the best-fitting alternatives surface first. */
 export function swapCandidates(
   currentStops: RouteStop[],
+  position: number,
   plan: PlanState,
-): { mandal: Mandal; reason?: string }[] {
+): SwapCandidate[] {
   const usedIds = new Set(currentStops.map((s) => s.mandal.id));
   const needsAccessible = plan.needs.includes('accessibility');
+  const prevOrder = position > 0 ? currentStops[position - 1].mandal.walkOrder : 0;
+  const nextStop = currentStops[position + 1];
+  const oldLegIn = currentStops[position].legFromPrevM;
+  const oldLegInMin = currentStops[position].legFromPrevMin;
+  const oldLegOut = nextStop?.legFromPrevM ?? 0;
+  const oldLegOutMin = nextStop?.legFromPrevMin ?? 0;
+
   return mandals
     .filter((m) => !usedIds.has(m.id) && (!needsAccessible || m.easier))
-    .map((m) => ({ mandal: m, reason: reasonFor(m, plan) }))
+    .map((m) => {
+      const legIn = legBetweenOrders(prevOrder, m.walkOrder);
+      const legOut = nextStop ? legBetweenOrders(m.walkOrder, nextStop.mandal.walkOrder) : { m: 0, min: 0 };
+      return {
+        mandal: m,
+        reason: reasonFor(m, plan),
+        deltaWalkM: legIn.m + legOut.m - (oldLegIn + oldLegOut),
+        deltaWalkMin: legIn.min + legOut.min - (oldLegInMin + oldLegOutMin),
+      };
+    })
     .sort((a, b) => {
       const scoreA = a.mandal.interestTags.filter((t) => plan.interests.includes(t)).length;
       const scoreB = b.mandal.interestTags.filter((t) => plan.interests.includes(t)).length;

@@ -1,16 +1,34 @@
-import { Footprints, UsersRound, ChevronRight } from 'lucide-react';
-import { PlainHeader, StatusPill } from './ui';
+import { Footprints, UsersRound, ChevronRight, CircleAlert } from 'lucide-react';
+import { PlainHeader, StatusPill, InlineNote } from './ui';
 import type { Mandal } from './mandals';
+import { formatDistance, type SwapCandidate } from './route';
+
+// Below this, the difference reads as noise rather than a real cost —
+// call it "about the same" instead of quoting a fake-precise number.
+const NEGLIGIBLE_DELTA_M = 150;
+// Above this, surface it as an inline warning rather than a quiet meta line —
+// mirrors the accessibility constraint note on Screen2 (tell the truth before
+// the visitor invests in the swap).
+const SIGNIFICANT_DELTA_M = 500;
+
+function walkDeltaLabel(deltaM: number, deltaMin: number): string {
+  if (Math.abs(deltaM) < NEGLIGIBLE_DELTA_M) return 'About the same walking distance';
+  const amount = formatDistance(Math.abs(deltaM));
+  const minutes = Math.abs(deltaMin);
+  return deltaM > 0
+    ? `About ${amount} (${minutes} min) more walking than your current route`
+    : `About ${amount} (${minutes} min) less walking than your current route`;
+}
 
 function CandidateCard({
-  mandal,
-  reason,
+  candidate,
   onSelect,
 }: {
-  mandal: Mandal;
-  reason?: string;
+  candidate: SwapCandidate;
   onSelect: () => void;
 }) {
+  const { mandal, reason, deltaWalkM, deltaWalkMin } = candidate;
+  const significant = deltaWalkM >= SIGNIFICANT_DELTA_M;
   return (
     <button
       onClick={onSelect}
@@ -31,6 +49,17 @@ function CandidateCard({
       {reason ? (
         <p className="mt-2 text-[13px] leading-[18px] text-ink-tertiary">{reason}</p>
       ) : null}
+      {significant ? (
+        <div className="mt-2">
+          <InlineNote icon={CircleAlert} tone="moderate">
+            {walkDeltaLabel(deltaWalkM, deltaWalkMin)}
+          </InlineNote>
+        </div>
+      ) : (
+        <p className="mt-2 text-[13px] leading-[18px] text-ink-tertiary tnum">
+          {walkDeltaLabel(deltaWalkM, deltaWalkMin)}
+        </p>
+      )}
     </button>
   );
 }
@@ -42,7 +71,7 @@ export function ScreenSwapStop({
   onPick,
 }: {
   currentName: string;
-  candidates: { mandal: Mandal; reason?: string }[];
+  candidates: SwapCandidate[];
   onBack: () => void;
   onPick: (mandal: Mandal) => void;
 }) {
@@ -61,12 +90,7 @@ export function ScreenSwapStop({
             </p>
           ) : (
             candidates.map((c) => (
-              <CandidateCard
-                key={c.mandal.id}
-                mandal={c.mandal}
-                reason={c.reason}
-                onSelect={() => onPick(c.mandal)}
-              />
+              <CandidateCard key={c.mandal.id} candidate={c} onSelect={() => onPick(c.mandal)} />
             ))
           )}
         </div>
