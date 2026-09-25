@@ -1,4 +1,5 @@
 import { mandals, type Mandal } from './mandals';
+import { startPoints } from './startPoints';
 import type { PlanState, TimeOption } from './types';
 
 export interface RouteStop {
@@ -25,6 +26,29 @@ export interface GeneratedRoute {
 }
 
 const STOP_TARGET: Record<TimeOption, number> = { '1': 2, '2': 3, '4': 5 };
+
+/** Sums the walking distance/time across every mandal strictly between two
+    points in the canonical walk order. When the span starts from the very
+    beginning (lo === 0) and the visitor picked a specific starting point,
+    that replaces the first mandal's baked-in default leg — everywhere else
+    the mandal data speaks for itself. */
+function legSum(lo: number, hi: number, plan: PlanState): { m: number; min: number } {
+  let m = 0;
+  let min = 0;
+  for (const between of mandals) {
+    if (between.walkOrder > lo && between.walkOrder <= hi) {
+      if (lo === 0 && between.walkOrder === 1 && plan.startPoint) {
+        const sp = startPoints[plan.startPoint];
+        m += sp.distM;
+        min += sp.distMin;
+      } else {
+        m += between.legFromPrevM;
+        min += between.legFromPrevMin;
+      }
+    }
+  }
+  return { m, min };
+}
 
 export function reasonFor(m: Mandal, plan: PlanState): string | undefined {
   const matchedInterest = plan.interests.find((i) => m.interestTags.includes(i));
@@ -69,15 +93,8 @@ export function generateRoute(plan: PlanState): GeneratedRoute {
   for (const m of chosen) {
     // Sum the leg across every mandal between the previous selected stop and
     // this one, so a "skip" is still reflected as real distance walked.
-    let legM = 0;
-    let legMin = 0;
-    for (const between of mandals) {
-      if (between.walkOrder > prevOrder && between.walkOrder <= m.walkOrder) {
-        legM += between.legFromPrevM;
-        legMin += between.legFromPrevMin;
-      }
-    }
-    stops.push({ mandal: m, legFromPrevM: legM, legFromPrevMin: legMin, reason: reasonFor(m, plan) });
+    const leg = legSum(prevOrder, m.walkOrder, plan);
+    stops.push({ mandal: m, legFromPrevM: leg.m, legFromPrevMin: leg.min, reason: reasonFor(m, plan) });
     prevOrder = m.walkOrder;
   }
 
@@ -97,21 +114,15 @@ export function formatDistance(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m} m`;
 }
 
-/** Distance/time between two points in the canonical walk order, summing
-    every mandal strictly between them — works whichever direction the swap
-    moves, since it's the same ground either way. */
-function legBetweenOrders(orderA: number, orderB: number): { m: number; min: number } {
+/** Distance/time between two points in the canonical walk order — works
+    whichever direction the swap moves, since it's the same ground either
+    way. Only honours the chosen starting point when the lower end is
+    genuinely the start of the route (order 0); an internal span between two
+    later stops never involves it. */
+function legBetweenOrders(orderA: number, orderB: number, plan: PlanState): { m: number; min: number } {
   const lo = Math.min(orderA, orderB);
   const hi = Math.max(orderA, orderB);
-  let m = 0;
-  let min = 0;
-  for (const between of mandals) {
-    if (between.walkOrder > lo && between.walkOrder <= hi) {
-      m += between.legFromPrevM;
-      min += between.legFromPrevMin;
-    }
-  }
-  return { m, min };
+  return legSum(lo, hi, plan);
 }
 
 export interface SwapCandidate {
@@ -145,8 +156,8 @@ export function swapCandidates(
   return mandals
     .filter((m) => !usedIds.has(m.id) && (!needsAccessible || m.easier))
     .map((m) => {
-      const legIn = legBetweenOrders(prevOrder, m.walkOrder);
-      const legOut = nextStop ? legBetweenOrders(m.walkOrder, nextStop.mandal.walkOrder) : { m: 0, min: 0 };
+      const legIn = legBetweenOrders(prevOrder, m.walkOrder, plan);
+      const legOut = nextStop ? legBetweenOrders(m.walkOrder, nextStop.mandal.walkOrder, plan) : { m: 0, min: 0 };
       return {
         mandal: m,
         reason: reasonFor(m, plan),
@@ -172,7 +183,7 @@ export function applySwapAt(
 ): RouteStop[] {
   const next = stops.map((s) => ({ ...s }));
   const prevOrder = position > 0 ? next[position - 1].mandal.walkOrder : 0;
-  const legIn = legBetweenOrders(prevOrder, mandal.walkOrder);
+  const legIn = legBetweenOrders(prevOrder, mandal.walkOrder, plan);
   next[position] = {
     mandal,
     legFromPrevM: legIn.m,
@@ -180,7 +191,7 @@ export function applySwapAt(
     reason: reasonFor(mandal, plan) ?? 'You chose this stop',
   };
   if (position + 1 < next.length) {
-    const legOut = legBetweenOrders(mandal.walkOrder, next[position + 1].mandal.walkOrder);
+    const legOut = legBetweenOrders(mandal.walkOrder, next[position + 1].mandal.walkOrder, plan);
     next[position + 1] = { ...next[position + 1], legFromPrevM: legOut.m, legFromPrevMin: legOut.min };
   }
   return next;

@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
 import { Check, CircleAlert } from 'lucide-react';
-import type { NeedId, PlanState } from './types';
+import type { NeedId, PlanState, StartPointId } from './types';
 import { needCatalog, groupBOrder, suggestedNeeds } from './data';
+import { startPoints } from './startPoints';
 import {
   PlanningHeader,
   StickyBar,
   PrimaryButton,
   InlineNote,
 } from './ui';
+
+const startPointOrder: StartPointId[] = ['swargate', 'shaniwarwada', 'budhwar-peth', 'kasba'];
 
 function NeedRow({
   id,
@@ -143,6 +146,38 @@ export function Screen2({
               Some older lanes near Tulshibaug are narrow and stepped.
               We&apos;ll route around them where possible.
             </InlineNote>
+          </div>
+        ) : null}
+
+        {plan.needs.includes('parking') ? (
+          <div className="animate-disclose mt-6 border-t border-border pt-6">
+            <h2 className="text-[15px] font-medium text-ink-secondary">
+              Where are you parked?
+            </h2>
+            <p className="mt-1 text-[13px] leading-[18px] text-ink-tertiary">
+              So we can tell you how far it is from your last stop.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {startPointOrder.map((id) => {
+                const sp = startPoints[id];
+                const sel = plan.startPoint === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setPlan({ startPoint: id })}
+                    aria-pressed={sel}
+                    className={`flex h-11 items-center gap-1.5 rounded-full px-4 text-[15px] font-medium transition-colors ${
+                      sel
+                        ? 'border-[1.5px] border-primary bg-[rgba(244,197,66,0.12)] text-ink'
+                        : 'border border-border bg-surface text-ink-secondary active:bg-sunken'
+                    }`}
+                  >
+                    {sel ? <Check size={16} strokeWidth={2.5} /> : null}
+                    {sp.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : null}
 
