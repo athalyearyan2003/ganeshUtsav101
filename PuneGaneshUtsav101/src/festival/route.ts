@@ -26,7 +26,7 @@ export interface GeneratedRoute {
 
 const STOP_TARGET: Record<TimeOption, number> = { '1': 2, '2': 3, '4': 5 };
 
-function reasonFor(m: Mandal, plan: PlanState): string | undefined {
+export function reasonFor(m: Mandal, plan: PlanState): string | undefined {
   const matchedInterest = plan.interests.find((i) => m.interestTags.includes(i));
   if (matchedInterest) return `Matches your interest in ${matchedInterest}`;
   if (plan.needs.includes('accessibility') && m.easier)
@@ -95,4 +95,65 @@ export function generateRoute(plan: PlanState): GeneratedRoute {
 
 export function formatDistance(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m} m`;
+}
+
+/** Distance/time between two points in the canonical walk order, summing
+    every mandal strictly between them — works whichever direction the swap
+    moves, since it's the same ground either way. */
+function legBetweenOrders(orderA: number, orderB: number): { m: number; min: number } {
+  const lo = Math.min(orderA, orderB);
+  const hi = Math.max(orderA, orderB);
+  let m = 0;
+  let min = 0;
+  for (const between of mandals) {
+    if (between.walkOrder > lo && between.walkOrder <= hi) {
+      m += between.legFromPrevM;
+      min += between.legFromPrevMin;
+    }
+  }
+  return { m, min };
+}
+
+/** Other mandals the visitor could swap this stop for — excludes mandals
+    already in the route, keeps the accessibility hard-filter, and ranks by
+    interest match so the best-fitting alternatives surface first. */
+export function swapCandidates(
+  currentStops: RouteStop[],
+  plan: PlanState,
+): { mandal: Mandal; reason?: string }[] {
+  const usedIds = new Set(currentStops.map((s) => s.mandal.id));
+  const needsAccessible = plan.needs.includes('accessibility');
+  return mandals
+    .filter((m) => !usedIds.has(m.id) && (!needsAccessible || m.easier))
+    .map((m) => ({ mandal: m, reason: reasonFor(m, plan) }))
+    .sort((a, b) => {
+      const scoreA = a.mandal.interestTags.filter((t) => plan.interests.includes(t)).length;
+      const scoreB = b.mandal.interestTags.filter((t) => plan.interests.includes(t)).length;
+      return scoreB - scoreA || a.mandal.walkOrder - b.mandal.walkOrder;
+    });
+}
+
+/** Replace the stop at `position` with a manually chosen mandal, recomputing
+    only the legs touching that position (in and out) — everything else in
+    the route stays exactly as it was. */
+export function applySwapAt(
+  stops: RouteStop[],
+  position: number,
+  mandal: Mandal,
+  plan: PlanState,
+): RouteStop[] {
+  const next = stops.map((s) => ({ ...s }));
+  const prevOrder = position > 0 ? next[position - 1].mandal.walkOrder : 0;
+  const legIn = legBetweenOrders(prevOrder, mandal.walkOrder);
+  next[position] = {
+    mandal,
+    legFromPrevM: legIn.m,
+    legFromPrevMin: legIn.min,
+    reason: reasonFor(mandal, plan) ?? 'You chose this stop',
+  };
+  if (position + 1 < next.length) {
+    const legOut = legBetweenOrders(mandal.walkOrder, next[position + 1].mandal.walkOrder);
+    next[position + 1] = { ...next[position + 1], legFromPrevM: legOut.m, legFromPrevMin: legOut.min };
+  }
+  return next;
 }

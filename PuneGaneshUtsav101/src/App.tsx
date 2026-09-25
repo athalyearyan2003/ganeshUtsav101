@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { initialPlan, type PlanState, type JourneyStatus } from './festival/types';
 import { Screen1 } from './festival/Screen1';
 import { Screen2 } from './festival/Screen2';
@@ -15,8 +15,9 @@ import { ScreenSafety } from './festival/ScreenSafety';
 import { ScreenFindFamily } from './festival/ScreenFindFamily';
 import { ScreenDiscover } from './festival/ScreenDiscover';
 import { ScreenStory } from './festival/ScreenStory';
+import { ScreenSwapStop } from './festival/ScreenSwapStop';
 import { storyById, storyForMandal } from './festival/discovery';
-import { generateRoute } from './festival/route';
+import { generateRoute, applySwapAt, swapCandidates, type RouteStop } from './festival/route';
 import { GetHelpButton, TabBar, type TabId } from './festival/ui';
 
 // Where a discovery screen returns to on "Continue to your journey".
@@ -43,7 +44,8 @@ type Route =
   | { name: 'find-family' }
   // discover as a root tab has no `back`; pushed from a journey screen it does
   | { name: 'discover'; back?: JourneyOrigin }
-  | { name: 'story'; id: string; back: JourneyOrigin; fromList: boolean };
+  | { name: 'story'; id: string; back: JourneyOrigin; fromList: boolean }
+  | { name: 'swap-stop'; position: number };
 
 export default function App() {
   const [plan, setPlanState] = useState<PlanState>(initialPlan);
@@ -60,7 +62,12 @@ export default function App() {
   // makes group type, needs, time and interests change which mandals appear,
   // in what order, and why (see festival/route.ts).
   const journey = useMemo(() => generateRoute(plan), [plan]);
-  const stops = journey.stops;
+  // A visitor can manually swap one stop for another (see ScreenSwapStop).
+  // That override lives on top of the auto-generated route and is cleared
+  // whenever the plan itself changes, since a new plan means new stops.
+  const [manualStops, setManualStops] = useState<RouteStop[] | null>(null);
+  useEffect(() => setManualStops(null), [journey]);
+  const stops = manualStops ?? journey.stops;
   const stopsLabel = `${stops.length} mandal${stops.length === 1 ? '' : 's'}`;
   const durationHrs = Math.floor(journey.totalMin / 60);
   const durationMins = journey.totalMin % 60;
@@ -236,6 +243,23 @@ export default function App() {
               fromList: false,
             })
           }
+          onSwap={() => setRoute({ name: 'swap-stop', position: route.stop })}
+        />
+      ) : null;
+      break;
+    }
+    case 'swap-stop': {
+      const position = route.position;
+      const target = stops[position];
+      screen = target ? (
+        <ScreenSwapStop
+          currentName={target.mandal.name}
+          candidates={swapCandidates(stops, plan)}
+          onBack={() => setRoute({ name: 's5', stop: position })}
+          onPick={(mandal) => {
+            setManualStops(applySwapAt(stops, position, mandal, plan));
+            setRoute({ name: 's5', stop: position });
+          }}
         />
       ) : null;
       break;
