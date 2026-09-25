@@ -379,7 +379,7 @@ export function Screen4({
 
       <StickyBar>
         <div className="flex gap-3">
-          <SecondaryButton onClick={onAdjust}>Adjust plan</SecondaryButton>
+          <SecondaryButton outlined onClick={onAdjust}>Adjust plan</SecondaryButton>
           <div className="flex-1">
             <PrimaryButton onClick={onStart}>Start journey</PrimaryButton>
           </div>

@@ -3,7 +3,13 @@ import { ArrowLeft, Siren, LocateFixed, Info, ChevronDown, ChevronUp, Stethoscop
 
 const LANDMARK = 'Tulshibaug Ganpati';
 
-export function ScreenMedical({ onBack }: { onBack: () => void }) {
+export function ScreenMedical({
+  onBack,
+  onShowOnMap,
+}: {
+  onBack: () => void;
+  onShowOnMap?: () => void;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -70,9 +76,18 @@ export function ScreenMedical({ onBack }: { onBack: () => void }) {
                     <Stethoscope size={20} strokeWidth={1.75} className="mt-px shrink-0 text-ink-secondary" />
                     <div className="flex-1">
                       <p className="text-[15px] leading-[22px] text-ink">{label}</p>
-                      <button className="mt-1 text-[13px] font-medium text-[var(--color-assist)]">
-                        Show route
-                      </button>
+                      {onShowOnMap ? (
+                        <button
+                          onClick={onShowOnMap}
+                          className="mt-1 text-[13px] font-medium text-[var(--color-assist)]"
+                        >
+                          Show on map
+                        </button>
+                      ) : (
+                        <p className="mt-1 text-[13px] text-ink-tertiary">
+                          Map available during an active journey
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

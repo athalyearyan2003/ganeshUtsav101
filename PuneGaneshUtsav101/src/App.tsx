@@ -16,6 +16,7 @@ import { ScreenFindFamily } from './festival/ScreenFindFamily';
 import { ScreenDiscover } from './festival/ScreenDiscover';
 import { ScreenStory } from './festival/ScreenStory';
 import { ScreenSwapStop } from './festival/ScreenSwapStop';
+import { ScreenTips } from './festival/ScreenTips';
 import { storyById, storyForMandal } from './festival/discovery';
 import { generateRoute, applySwapAt, swapCandidates, type RouteStop } from './festival/route';
 import { GetHelpButton, TabBar, type TabId } from './festival/ui';
@@ -45,7 +46,8 @@ type Route =
   // discover as a root tab has no `back`; pushed from a journey screen it does
   | { name: 'discover'; back?: JourneyOrigin }
   | { name: 'story'; id: string; back: JourneyOrigin; fromList: boolean }
-  | { name: 'swap-stop'; position: number };
+  | { name: 'swap-stop'; position: number }
+  | { name: 'tips'; back: Route };
 
 export default function App() {
   const [plan, setPlanState] = useState<PlanState>(initialPlan);
@@ -129,6 +131,7 @@ export default function App() {
           onOpenRoute={() => setRoute({ name: 's4' })}
           onContinueLive={() => setRoute({ name: 's6' })}
           onDiscover={() => setRoute({ name: 'discover' })}
+          onTips={() => setRoute({ name: 'tips', back: { name: 'home' } })}
           onNextStory={() => {
             const currentMandal = stops[currentStop]?.mandal;
             const story = currentMandal ? storyForMandal(currentMandal.id) : undefined;
@@ -270,6 +273,7 @@ export default function App() {
           stops={stops}
           stop={currentStop}
           onBack={() => setRoute({ name: 's4' })}
+          onExit={() => setRoute({ name: 'home' })}
           onHelp={() => openHelp({ name: 's6' })}
           onArrived={() => {
             if (currentStop < stops.length - 1) {
@@ -294,7 +298,12 @@ export default function App() {
       );
       break;
     case 'medical':
-      screen = <ScreenMedical onBack={() => setRoute({ name: 'help' })} />;
+      screen = (
+        <ScreenMedical
+          onBack={() => setRoute({ name: 'help' })}
+          onShowOnMap={status === 'active' ? () => setRoute({ name: 's6' }) : undefined}
+        />
+      );
       break;
     case 'safety':
       screen = <ScreenSafety onBack={() => setRoute({ name: 'help' })} />;
@@ -304,6 +313,7 @@ export default function App() {
         <ScreenFindFamily
           onBack={() => setRoute({ name: 'help' })}
           onSafety={() => setRoute({ name: 'safety' })}
+          onShowOnMap={status === 'active' ? () => setRoute({ name: 's6' }) : undefined}
         />
       );
       break;
@@ -349,6 +359,9 @@ export default function App() {
       );
       break;
     }
+    case 'tips':
+      screen = <ScreenTips onBack={() => setRoute(route.back)} />;
+      break;
   }
 
   return (

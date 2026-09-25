@@ -7,9 +7,11 @@ const REGROUP_NOTE =
 export function ScreenFindFamily({
   onBack,
   onSafety,
+  onShowOnMap,
 }: {
   onBack: () => void;
   onSafety: () => void;
+  onShowOnMap?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -39,10 +41,19 @@ export function ScreenFindFamily({
           </div>
         </div>
 
-        <button className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-[10px] border-2 border-[var(--color-assist)] bg-canvas px-4 text-[15px] font-medium text-[var(--color-assist)] active:bg-[rgba(23,94,99,0.06)]">
-          <Route size={20} strokeWidth={1.75} />
-          Show route there
-        </button>
+        {onShowOnMap ? (
+          <button
+            onClick={onShowOnMap}
+            className="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-[10px] border-2 border-[var(--color-assist)] bg-canvas px-4 text-[15px] font-medium text-[var(--color-assist)] active:bg-[rgba(23,94,99,0.06)]"
+          >
+            <Route size={20} strokeWidth={1.75} />
+            Show on map
+          </button>
+        ) : (
+          <p className="mt-6 text-[13px] leading-[18px] text-ink-tertiary">
+            The map is available once your journey is active.
+          </p>
+        )}
 
         <div className="mt-5 flex items-start gap-1.5 text-[13px] leading-[18px] text-ink-tertiary">
           <Info size={16} strokeWidth={1.75} className="mt-px shrink-0" />
