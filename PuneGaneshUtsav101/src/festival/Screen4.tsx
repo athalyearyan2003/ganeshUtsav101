@@ -30,6 +30,7 @@ import {
 import { storyForMandal } from './discovery';
 import type { Facility, Mandal } from './mandals';
 import { formatDistance, type RouteStop } from './route';
+import { startPoints } from './startPoints';
 
 function FacilityList({ items }: { items: Facility[] }) {
   return (
@@ -201,6 +202,7 @@ export function Screen4({
 }) {
   const withRest = plan.needs.includes('rest');
   const withParking = plan.needs.includes('parking');
+  const returnPoint = plan.startPoint ? startPoints[plan.startPoint] : startPoints.kasba;
 
   const chips: { icon: LucideIcon; label: string }[] = [
     { icon: UsersRound, label: `${plan.groupCount} people` },
@@ -349,7 +351,8 @@ export function Screen4({
               </div>
               <div className="min-w-0 flex-1 py-1">
                 <p className="text-[15px] leading-[22px] text-ink tnum">
-                  Return to parking — Mandai, 900 m, approx. 12 min
+                  Return to parking — {returnPoint.parkingName},{' '}
+                  {formatDistance(returnPoint.returnDistM)}, approx. {returnPoint.returnDistMin} min
                 </p>
               </div>
             </div>
