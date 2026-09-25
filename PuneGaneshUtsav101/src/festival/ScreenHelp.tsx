@@ -1,4 +1,95 @@
-import { ArrowLeft, Siren, ShieldAlert, UsersRound, type LucideIcon } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Siren, ShieldAlert, UsersRound, Phone, Pencil, type LucideIcon } from 'lucide-react';
+
+const STORAGE_KEY = 'ganeshotsav_family_number';
+
+function readSavedNumber(): string {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function writeSavedNumber(value: string): void {
+  try {
+    if (value) window.localStorage.setItem(STORAGE_KEY, value);
+    else window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage can be unavailable (private browsing, blocked cookies); the
+    // number just won't persist across visits — not worth surfacing an error.
+  }
+}
+
+function FamilyCallCard() {
+  const [number, setNumber] = useState(readSavedNumber);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const save = () => {
+    const trimmed = draft.trim();
+    setNumber(trimmed);
+    writeSavedNumber(trimmed);
+    setEditing(false);
+  };
+
+  if (editing || !number) {
+    return (
+      <div className="rounded-[14px] border-2 border-[var(--color-assist)] bg-canvas p-4">
+        <p className="text-[15px] font-semibold leading-[20px] text-ink">
+          Save a family member&apos;s number
+        </p>
+        <p className="mt-1 text-[13px] leading-[18px] text-ink-secondary">
+          So you can call them in one tap if you get separated.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <input
+            type="tel"
+            inputMode="tel"
+            defaultValue={number}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="+91 98765 43210"
+            className="h-11 min-w-0 flex-1 rounded-[10px] border border-border-strong bg-surface px-3 text-[15px] text-ink placeholder:text-ink-tertiary"
+          />
+          <button
+            onClick={save}
+            className="flex h-11 shrink-0 items-center justify-center rounded-[10px] bg-primary px-4 text-[15px] font-medium text-[#1c1c1e] active:bg-[var(--color-primary-press)]"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[88px] w-full items-center gap-4 rounded-[14px] border-2 border-[var(--color-assist)] bg-canvas px-4 py-4">
+      <Phone size={24} strokeWidth={1.75} className="shrink-0 text-[var(--color-assist)]" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[17px] font-semibold leading-[24px] text-ink">Call family</p>
+        <p className="mt-0.5 truncate text-[13px] leading-[18px] text-ink-secondary tnum">
+          {number}
+        </p>
+      </div>
+      <a
+        href={`tel:${number}`}
+        className="flex h-11 shrink-0 items-center justify-center rounded-[10px] bg-[var(--color-assist)] px-4 text-[15px] font-medium text-white active:opacity-90"
+      >
+        Call
+      </a>
+      <button
+        onClick={() => {
+          setDraft(number);
+          setEditing(true);
+        }}
+        aria-label="Edit saved number"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-[10px] text-ink-tertiary active:bg-sunken"
+      >
+        <Pencil size={18} strokeWidth={1.75} />
+      </button>
+    </div>
+  );
+}
 
 function HelpRow({
   icon: Icon,
@@ -56,10 +147,15 @@ export function ScreenHelp({
       </header>
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-6">
-        <p className="mb-5 text-[15px] leading-[22px] text-ink-secondary">
+        <p className="mb-4 text-[15px] leading-[22px] text-ink-secondary">
           Choose what kind of help you need. Tap once to continue.
         </p>
 
+        <FamilyCallCard />
+
+        <p className="mb-3 mt-6 text-[13px] font-medium uppercase tracking-[0.8px] text-ink-secondary">
+          Or get help nearby
+        </p>
         <div className="flex flex-col gap-3">
           <HelpRow
             icon={Siren}

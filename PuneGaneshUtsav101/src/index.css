@@ -126,24 +126,19 @@ body {
   animation: routeFlow 1.1s linear infinite;
 }
 
-/* Gentle continuous drift so the map reads as live, not a static diagram */
-@keyframes mapDrift {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(-6px, 4px);
-  }
-}
-.animate-map-drift {
-  animation: mapDrift 9s ease-in-out infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .animate-gps-ring,
-  .animate-route-flow,
-  .animate-map-drift {
+  .animate-route-flow {
     animation: none;
+  }
+  button:active {
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .backdrop-blur-md {
+    background-color: var(--color-canvas) !important;
+    backdrop-filter: none !important;
   }
 }

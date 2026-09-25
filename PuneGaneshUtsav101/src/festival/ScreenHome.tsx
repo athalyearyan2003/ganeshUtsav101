@@ -6,6 +6,7 @@ import {
   Armchair,
   Toilet,
   ChevronRight,
+  Info,
   type LucideIcon,
 } from 'lucide-react';
 import { RootHeader, PrimaryButton, TertiaryLink } from './ui';
@@ -57,12 +58,25 @@ function DiscoveryCard({
   );
 }
 
-/* ---- Glance row for "Nearby now" — icon + label, no card ---- */
-function NearbyRow({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+/* ---- "Nearby now" — a card that hovers over the primary panel's edge, so
+   it's visible at a glance instead of requiring a scroll to the bottom. ---- */
+function NearbyChip({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <div className="flex min-h-11 items-center gap-3 text-[15px] leading-[22px] text-ink">
-      <Icon size={20} strokeWidth={1.75} className="shrink-0 text-ink-secondary" />
-      <span className="tnum">{label}</span>
+    <div className="flex min-w-0 flex-1 items-center gap-2 text-[13px] font-medium leading-[18px] text-ink">
+      <Icon size={18} strokeWidth={1.75} className="shrink-0 text-ink-secondary" />
+      <span className="tnum truncate">{label}</span>
+    </div>
+  );
+}
+
+function NearbyNowCard({ items }: { items: { icon: LucideIcon; label: string }[] }) {
+  return (
+    <div className="relative z-10 -mt-4 px-4">
+      <div className="flex items-center gap-3 rounded-[12px] border border-border bg-surface px-4 py-3 shadow-[0_6px_16px_rgba(28,26,23,0.14)]">
+        {items.map((item, i) => (
+          <NearbyChip key={i} icon={item.icon} label={item.label} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -81,6 +95,7 @@ export function ScreenHome({
   onContinueLive,
   onDiscover,
   onNextStory,
+  onTips,
 }: {
   status: JourneyStatus;
   stop: number;
@@ -95,6 +110,7 @@ export function ScreenHome({
   onContinueLive: () => void;
   onDiscover: () => void;
   onNextStory: () => void;
+  onTips: () => void;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -128,6 +144,12 @@ export function ScreenHome({
                   onClick={onDiscover}
                 />
               </div>
+            </div>
+
+            <div className="mt-6">
+              <TertiaryLink icon={Info} onClick={onTips}>
+                Practical tips before you go
+              </TertiaryLink>
             </div>
           </>
         ) : null}
@@ -209,7 +231,14 @@ export function ScreenHome({
               </PrimaryPanel>
             </div>
 
-            <div className="mt-8">
+            <NearbyNowCard
+              items={[
+                { icon: Armchair, label: 'Rest in 3 min' },
+                { icon: Toilet, label: 'Toilet — 200 m' },
+              ]}
+            />
+
+            <div className="mt-6">
               <SectionLabel>Discover along your route</SectionLabel>
               <div className="mt-3">
                 <DiscoveryCard
@@ -217,14 +246,6 @@ export function ScreenHome({
                   meta={`${nextName} · story`}
                   onClick={onNextStory}
                 />
-              </div>
-            </div>
-
-            <div className="mt-8">
-              <SectionLabel>Nearby now</SectionLabel>
-              <div className="mt-2 flex flex-col divide-y divide-border">
-                <NearbyRow icon={Armchair} label="Rest point in about 3 minutes" />
-                <NearbyRow icon={Toilet} label="Toilet — 200 m" />
               </div>
             </div>
           </>

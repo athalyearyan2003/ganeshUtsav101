@@ -75,7 +75,7 @@ export function PlainHeader({
   right?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-canvas px-5">
+    <header className="sticky top-0 z-20 border-b border-border bg-canvas/85 backdrop-blur-md px-5">
       <div className="flex h-14 items-center">
         {onBack ? (
           <button
@@ -104,7 +104,7 @@ export function StickyBar({
   children: ReactNode;
 }) {
   return (
-    <div className="shrink-0 border-t border-border bg-canvas">
+    <div className="shrink-0 border-t border-border bg-canvas/85 backdrop-blur-md">
       <div className="px-5 pt-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 1.5rem)' }}>
         {helper ? (
           <p className="mb-2 text-[13px] leading-[18px] text-ink-tertiary tnum">
@@ -133,10 +133,10 @@ export function PrimaryButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-14 w-full items-center justify-center gap-2 rounded-[12px] text-[15px] font-medium transition-colors ${
+      className={`flex h-14 w-full items-center justify-center gap-2 rounded-[12px] text-[15px] font-medium transition-[background-color,transform] duration-100 ${
         disabled
           ? 'cursor-not-allowed bg-[var(--color-border)] text-ink-tertiary'
-          : 'bg-primary text-[#1c1c1e] active:bg-[var(--color-primary-press)]'
+          : 'bg-primary text-[#1c1c1e] active:scale-[0.97] active:bg-[var(--color-primary-press)]'
       }`}
     >
       <span>{children}</span>
@@ -160,7 +160,7 @@ export function SecondaryButton({
   return (
     <button
       onClick={onClick}
-      className={`flex h-14 items-center justify-center rounded-[10px] px-4 text-[15px] font-medium text-ink active:bg-sunken ${
+      className={`flex h-14 items-center justify-center rounded-[10px] px-4 text-[15px] font-medium text-ink transition-transform duration-100 active:scale-[0.97] active:bg-sunken ${
         outlined ? 'border border-border-strong' : ''
       }`}
     >
@@ -268,7 +268,7 @@ export function RootHeader({
   label?: string;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-canvas px-5">
+    <header className="sticky top-0 z-20 border-b border-border bg-canvas/85 backdrop-blur-md px-5">
       <div className="flex h-14 items-center">
         <span className="text-[15px] font-medium text-ink-secondary">{label}</span>
         <div className="ml-auto">
@@ -296,7 +296,7 @@ export function TabBar({
   ];
   return (
     <nav
-      className="shrink-0 border-t border-border bg-canvas"
+      className="shrink-0 border-t border-border bg-canvas/85 backdrop-blur-md"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     >
       <div className="flex h-[49px]">

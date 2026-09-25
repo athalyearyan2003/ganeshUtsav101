@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Footprints,
   UsersRound,
@@ -129,6 +129,8 @@ export function Screen5({
   const story = storyForMandal(m.id);
   const [route, setRoute] = useState<'easier' | 'direct'>('easier');
   const [justChanged, setJustChanged] = useState(false);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => setSaved(false), [m.id]);
 
   const pick = (r: 'easier' | 'direct') => {
     if (r === route) return;
@@ -285,7 +287,12 @@ export function Screen5({
       <StickyBar>
         <div className="flex flex-col gap-3">
           <PrimaryButton onClick={onStart}>Start walking here</PrimaryButton>
-          <SecondaryButton outlined>Save this route</SecondaryButton>
+          <SecondaryButton outlined onClick={() => setSaved((v) => !v)}>
+            <span className="flex items-center justify-center gap-1.5">
+              {saved ? <Check size={18} strokeWidth={2} /> : null}
+              {saved ? 'Route saved' : 'Save this route'}
+            </span>
+          </SecondaryButton>
         </div>
       </StickyBar>
     </div>
