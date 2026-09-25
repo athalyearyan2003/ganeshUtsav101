@@ -230,6 +230,7 @@ export default function App() {
           stops={stops}
           constrained={journey.constrained}
           headerRight={<GetHelpButton onClick={() => openHelp({ name: 's4' })} />}
+          onBack={() => setRoute({ name: 'journey-empty' })}
           onOpenStop={(i) => setRoute({ name: 's5', stop: i })}
           onStart={() => {
             setStatus('active');
@@ -292,7 +293,13 @@ export default function App() {
           stops={stops}
           stop={currentStop}
           onBack={() => setRoute({ name: 's4' })}
-          onExit={() => setRoute({ name: 'home' })}
+          onEndJourney={() => {
+            // Genuinely ends the live walk (unlike backgrounding via Home),
+            // per explicit request: this must actually stop, not just hide.
+            // The plan itself isn't discarded — Screen4 can restart it.
+            setStatus('planned');
+            setRoute({ name: 'home' });
+          }}
           onHelp={() => openHelp({ name: 's6' })}
           onArrived={() => {
             if (currentStop < stops.length - 1) {
