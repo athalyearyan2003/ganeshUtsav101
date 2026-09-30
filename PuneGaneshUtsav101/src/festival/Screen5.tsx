@@ -13,6 +13,7 @@ import {
   Check,
   BookOpen,
   Repeat,
+  Clock3,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ import {
 } from './ui';
 import type { Mandal } from './mandals';
 import { storyForMandal } from './discovery';
+import type { StopInsights } from './insights';
 
 function RouteCard({
   selected,
@@ -116,6 +118,7 @@ export function Screen5({
   onStart,
   onDiscoverStop,
   onSwap,
+  insights,
 }: {
   mandal: Mandal;
   stopNumber: number;
@@ -124,6 +127,7 @@ export function Screen5({
   onStart: () => void;
   onDiscoverStop: (id: string) => void;
   onSwap?: () => void;
+  insights?: StopInsights;
 }) {
   const m = mandal;
   const story = storyForMandal(m.id);
@@ -179,6 +183,50 @@ export function Screen5({
             </div>
           ) : null}
         </div>
+
+
+        {/* Worth the wait + Aarti timing — only where a sourced figure exists */}
+        {insights?.wait || insights?.aarti ? (
+          <div className="mt-6 flex flex-col gap-3">
+            {insights.wait ? (
+              <div className="rounded-[10px] border border-border p-3">
+                <p className="flex items-center gap-2 text-[15px] font-medium leading-[20px] text-ink">
+                  <Clock3 size={20} strokeWidth={1.75} className="shrink-0 text-ink-secondary" />
+                  Reported wait: {insights.wait.range} {insights.wait.condition}
+                </p>
+                {insights.alternative?.wait ? (
+                  <p className="mt-1.5 text-[15px] leading-[22px] text-ink-secondary">
+                    {insights.alternative.name} is usually {insights.alternative.wait.range}.
+                  </p>
+                ) : null}
+                <p className="mt-1.5 text-[13px] leading-[18px] text-ink-tertiary">
+                  Source: {insights.wait.source}. Actual waits vary through the day.
+                </p>
+                {insights.alternative && onSwap ? (
+                  <div className="mt-1">
+                    <TertiaryLink icon={Repeat} onClick={onSwap}>
+                      See a quieter option
+                    </TertiaryLink>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            {insights.aarti ? (
+              <InlineNote icon={Clock3} tone="assist">
+                <span className="block font-medium">
+                  A quieter Aarti: {insights.aarti.quieter.time}
+                </span>
+                <span className="mt-0.5 block">
+                  Usually fewer people and a closer view than the Aarti{' '}
+                  {insights.aarti.busiest.time}.
+                  {insights.aarti.quieter.sample
+                    ? ' Illustrative sample timing — confirm with the mandal.'
+                    : ''}
+                </span>
+              </InlineNote>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* Route choice */}
         <div className="mt-8">

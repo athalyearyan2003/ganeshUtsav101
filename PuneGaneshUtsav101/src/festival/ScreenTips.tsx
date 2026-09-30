@@ -5,9 +5,19 @@ import {
   Landmark,
   Volume2,
   ShieldCheck,
+  Route,
+  Ban,
   type LucideIcon,
 } from 'lucide-react';
 import { PlainHeader } from './ui';
+
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-6 text-[13px] font-medium uppercase tracking-[0.8px] text-ink-secondary">
+      {children}
+    </p>
+  );
+}
 
 function TipRow({
   icon: Icon,
@@ -39,11 +49,26 @@ export function ScreenTips({ onBack }: { onBack: () => void }) {
           Ganeshotsav or your tenth.
         </p>
 
-        <div className="mt-4">
+        <GroupLabel>Words you&apos;ll hear</GroupLabel>
+        <div className="mt-1">
           <TipRow
             icon={Landmark}
             title="A mandal is a neighbourhood committee's Ganpati installation"
             body="Each one is set up and run by local volunteers for the festival. Darshan means viewing the idol; a Dekhawa is a themed display some mandals build alongside it."
+          />
+        </div>
+
+        <GroupLabel>What to expect on the ground</GroupLabel>
+        <div className="mt-1">
+          <TipRow
+            icon={Ban}
+            title="Barricades steer vehicles, not people"
+            body="Barricades usually keep vehicles out of busy lanes and leave room to walk. If a lane is blocked, look for the next opening rather than pushing through."
+          />
+          <TipRow
+            icon={Route}
+            title="Some lanes are one-way for walkers"
+            body="At busy times an exit can be one-way, so you may not be able to re-enter from that side. Each stop's page shows its entry and exit."
           />
           <TipRow
             icon={UsersRound}

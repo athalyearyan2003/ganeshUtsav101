@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Check, CircleAlert } from 'lucide-react';
 import type { NeedId, PlanState, StartPointId } from './types';
 import { needCatalog, groupBOrder, suggestedNeeds } from './data';
@@ -79,6 +79,20 @@ export function Screen2({
     [plan.groupType],
   );
   const suggestedIds = suggestions.map((s) => s.id);
+
+  // Pre-select the group's suggested needs once per group choice. Needs that
+  // were only suggested for a previously chosen group are dropped; anything
+  // the visitor picked themselves is kept.
+  useEffect(() => {
+    if (plan.needsSeededFor === plan.groupType) return;
+    const previous = suggestedNeeds(plan.needsSeededFor).map((s) => s.id);
+    const kept = plan.needs.filter((n) => !previous.includes(n));
+    setPlan({
+      needs: [...kept, ...suggestedIds.filter((id) => !kept.includes(id))],
+      needsSeededFor: plan.groupType,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan.groupType]);
   const groupB = groupBOrder.filter((id) => !suggestedIds.includes(id));
 
   const toggle = (id: NeedId) => {

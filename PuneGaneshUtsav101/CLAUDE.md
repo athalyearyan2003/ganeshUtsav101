@@ -1709,3 +1709,20 @@ The project should always remain defensible as:
 
 **field evidence → system understanding → problem framing → opportunity → requirements → ecosystem → interface**
 
+
+---
+
+# 55. Decision log (supersedes earlier sections where stated)
+
+## 2026-09-30 — Gamification exception for youngsters (supersedes §43 for this persona only)
+
+- **Decided:** youngsters get a photo-hunt mechanic across 3–4 idols in one walkable zone. Completing it unlocks the idols' stories, and later a **sponsor-funded coupon/offer**. This is a conscious override of §43 ("no gamification", "no commercial offers"), not a slip.
+- **Rewards are coupons/offers funded by ads or sponsors. There are no cash payouts.** Users never "earn money"; they unlock offers.
+- **Evidence status: HYPOTHESIZED.** Nothing in the field research supports transactional rewards. The only supporting data is indirect (only 2.4% of route-planners finish every mandal, which argues for small hunt scope). Do not present this as a finding.
+- **Still excluded everywhere else:** ads or offers on Help, safety and live-navigation screens; timers or countdowns in the hunt; hunt prompts at stops currently reported as very crowded; any social feed.
+- **Before shipping any ad/offer surface:** parental-consent handling for under-18s (India DPDP Act), clear "Sponsored" labelling, fraud checks on photo submissions. Offer surfaces go behind a feature flag.
+- Phasing: Phase 0–1 (persona inference, worth-the-wait, quieter Aarti, group trade-off transparency, first-timer primer) are built. Phase 2 friends, Phase 3 hunt with narrative unlock, Phase 4 sponsor-funded offers are not.
+
+## Data honesty for personalization
+- Wait times appear only where a published source gives one (currently District.in, Pune Ganpati Pandal Guide 2026: Kasba 15–30 min normally, Dagdusheth 3–6 hrs at peak). Every such figure carries its source in the UI.
+- Aarti timings in `mandals.ts` are flagged `sample: true` and shown with "Illustrative sample timing — confirm with the mandal". Replace with verified timings before any real release.

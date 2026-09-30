@@ -77,6 +77,7 @@ export function generateRoute(plan: PlanState): GeneratedRoute {
     score += m.interestTags.filter((t) => plan.interests.includes(t)).length * 10;
     if (avoidCrowd && m.crowd.tone === 'high') score -= 6;
     if (avoidCrowd && m.crowd.tone === 'easy') score += 2;
+    if (plan.needs.includes('shorterWalk') && m.walk.tone === 'easy') score += 3;
     if (wantsMedical && m.facilities.some((f) => f.label.toLowerCase().includes('medical') || f.label.toLowerCase().includes('first aid')))
       score += 3;
     if (wantsFeeding && m.facilities.some((f) => f.label.toLowerCase().includes('feeding') && f.available))

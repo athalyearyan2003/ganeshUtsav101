@@ -34,6 +34,28 @@ export interface Mandal {
   legFromPrevMin: number;
   /** Approx. minutes spent at this stop (queue + darshan/dekhawa). */
   timeMin: number;
+  /** Reported queue time, only where a published source gives one — never
+      filled in by estimate. Absent means "no sourced figure", and the UI
+      stays silent rather than guessing. */
+  wait?: WaitInfo;
+  /** Aarti slots. `sample: true` marks timings that are illustrative for
+      this prototype and must be shown with a "confirm with the mandal" note. */
+  aarti?: AartiSlot[];
+}
+
+export interface WaitInfo {
+  /** Display range, e.g. "15–30 min". */
+  range: string;
+  /** Upper bound in minutes — used only to compare stops, never displayed. */
+  maxMin: number;
+  condition: 'normally' | 'at peak';
+  source: string;
+}
+
+export interface AartiSlot {
+  time: string;
+  load: 'quieter' | 'busiest';
+  sample: boolean;
 }
 
 export const mandals: Mandal[] = [
@@ -51,6 +73,16 @@ export const mandals: Mandal[] = [
     legFromPrevM: 400,
     legFromPrevMin: 6,
     timeMin: 35,
+    wait: {
+      range: '3–6 hrs',
+      maxMin: 360,
+      condition: 'at peak',
+      source: 'District.in, Pune Ganpati Pandal Guide 2026',
+    },
+    aarti: [
+      { time: 'around 5:30 pm', load: 'quieter', sample: true },
+      { time: 'around 8 pm', load: 'busiest', sample: true },
+    ],
     facilities: [
       { icon: Toilet, label: 'Toilet — 2 min away', available: true },
       { icon: Armchair, label: 'Seating — inside complex', available: true },
@@ -112,6 +144,12 @@ export const mandals: Mandal[] = [
     legFromPrevM: 500,
     legFromPrevMin: 7,
     timeMin: 20,
+    wait: {
+      range: '15–30 min',
+      maxMin: 30,
+      condition: 'normally',
+      source: 'District.in, Pune Ganpati Pandal Guide 2026',
+    },
     facilities: [
       { icon: Toilet, label: 'Toilet — 3 min away', available: true },
       { icon: Armchair, label: 'Seating — shaded courtyard', available: true },

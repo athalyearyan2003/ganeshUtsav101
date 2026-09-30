@@ -31,6 +31,7 @@ import { storyForMandal } from './discovery';
 import type { Facility, Mandal } from './mandals';
 import { formatDistance, type RouteStop } from './route';
 import { startPoints } from './startPoints';
+import { shapedBy } from './insights';
 
 function FacilityList({ items }: { items: Facility[] }) {
   return (
@@ -97,6 +98,11 @@ function StopCard({
       </p>
       {reason ? (
         <p className="mt-0.5 text-[13px] leading-[18px] text-ink-tertiary">{reason}</p>
+      ) : null}
+      {mandal.wait ? (
+        <p className="mt-0.5 text-[13px] leading-[18px] text-ink-tertiary">
+          Reported wait: {mandal.wait.range} {mandal.wait.condition}
+        </p>
       ) : null}
 
       {mandal.easier ? (
@@ -187,6 +193,7 @@ export function Screen4({
   onAdjust,
   onDiscoverAll,
   onDiscoverStop,
+  onTips,
   headerRight,
 }: {
   plan: PlanState;
@@ -198,10 +205,12 @@ export function Screen4({
   onAdjust: () => void;
   onDiscoverAll: () => void;
   onDiscoverStop: (id: string) => void;
+  onTips: () => void;
   headerRight?: ReactNode;
 }) {
   const withRest = plan.needs.includes('rest');
   const withParking = plan.needs.includes('parking');
+  const shaping = shapedBy(plan);
   const returnPoint = plan.startPoint ? startPoints[plan.startPoint] : startPoints.kasba;
 
   const chips: { icon: LucideIcon; label: string }[] = [
@@ -284,6 +293,21 @@ export function Screen4({
               );
             })}
           </div>
+
+          {shaping.length > 0 ? (
+            <div className="mt-3 rounded-[10px] border border-border bg-surface p-3">
+              <p className="text-[13px] font-medium uppercase tracking-[0.8px] text-ink-secondary">
+                Why the route looks this way
+              </p>
+              <ul className="mt-1.5 flex flex-col gap-1">
+                {shaping.map((line) => (
+                  <li key={line.need} className="text-[15px] leading-[22px] text-ink-secondary">
+                    {line.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {constrained ? (
             <div className="mt-3">
@@ -368,6 +392,12 @@ export function Screen4({
           ) : null}
 
           <div className="mt-5">
+            <TertiaryLink icon={Info} onClick={onTips}>
+              First time at the festival? What to expect today
+            </TertiaryLink>
+          </div>
+
+          <div className="mt-3">
             <Footnote>
               Crowd levels are reported by visitors and volunteers and can change
               quickly. Walking times are approximate.

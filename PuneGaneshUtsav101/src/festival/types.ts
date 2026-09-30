@@ -39,6 +39,10 @@ export interface PlanState {
       changes anything the visitor sees. Null means "typical starting point,"
       which matches the route's existing default distances. */
   startPoint: StartPointId | null;
+  /** The group type whose suggested needs were last pre-selected, so they are
+      seeded once per group choice and a suggestion the visitor removed is not
+      silently re-added when they navigate back. */
+  needsSeededFor: GroupType | null;
 }
 
 export const initialPlan: PlanState = {
@@ -48,4 +52,5 @@ export const initialPlan: PlanState = {
   time: null,
   interests: [],
   startPoint: null,
+  needsSeededFor: null,
 };

@@ -20,6 +20,7 @@ import { ScreenSwapStop } from './festival/ScreenSwapStop';
 import { ScreenTips } from './festival/ScreenTips';
 import { storyById, storyForMandal } from './festival/discovery';
 import { generateRoute, applySwapAt, swapCandidates, type RouteStop } from './festival/route';
+import { stopInsights } from './festival/insights';
 import { GetHelpButton, TabBar, type TabId } from './festival/ui';
 
 // Where a discovery screen returns to on "Continue to your journey".
@@ -231,6 +232,7 @@ export default function App() {
           constrained={journey.constrained}
           headerRight={<GetHelpButton onClick={() => openHelp({ name: 's4' })} />}
           onBack={() => setRoute({ name: 'journey-empty' })}
+          onTips={() => setRoute({ name: 'tips', back: { name: 's4' } })}
           onOpenStop={(i) => setRoute({ name: 's5', stop: i })}
           onStart={() => {
             setStatus('active');
@@ -250,6 +252,7 @@ export default function App() {
       screen = stopEntry ? (
         <Screen5
           mandal={stopEntry.mandal}
+          insights={stopInsights(stopEntry.mandal, stops, plan)}
           stopNumber={route.stop + 1}
           total={stops.length}
           onBack={() => setRoute({ name: 's4' })}
